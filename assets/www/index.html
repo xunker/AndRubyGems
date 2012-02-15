@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>AndRubyGems</title>
+
+    <meta name='viewport' content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no;">
+  	<meta name='charset' content="utf-8">
+
+    <script type="text/javascript" src="jquery/jquery-1.6.4.js"></script>
+    <script type="text/javascript" src="jquery/jquery.mobile-1.0.1.js"></script>
+    <script type="text/javascript" src="phonegap-1.4.0.js"></script>
+    <script type="text/javascript" src="jsrender.js"></script>
+    <script type="text/javascript" src="jstorage.js"></script>
+    <script type="text/javascript" src="config.js"></script>
+    <script type="text/javascript" src="base.js"></script>
+
+    <link rel="stylesheet" type="text/css" href="jquery/jquery.mobile-1.0.1.min.css" />
+    <style>
+      .overlay{
+        background:transparent url(images/overlay.png) repeat top left;
+        position:fixed;
+        top:0px;
+        bottom:0px;
+        left:0px;
+        right:0px;
+        z-index:100;
+      }
+
+    .box {
+      position:fixed;
+      top:-200px;
+      width:320px;
+      background-color:#fff;
+      color:#7F7F7F;
+      padding:0px;
+      border:2px solid #ccc;
+      z-index:101;
+      top:445px;
+    }
+
+  </style>
+
+    <script id="gemListEntryTemplate" type="text/x-jquery-tmpl">
+      <li>
+        <a data-theme='c' href='#gem-detail-page' class="gem-list-item" onclick="$('#gem-detail-page').jqmData('gem-name', '{{=name}}');">
+          {{=name}}
+        </a>
+      </li>
+    </script>
+
+    <script id="gemDetailTemplate" type="text/x-jquery-tmpl">
+      <div>
+        <dl>
+          <dt>Name:</dt>
+          <dd>{{=name}}</dd>
+      </div>
+    </script>
+
+<!-- downloads
+          version
+          version_downloads
+          authors
+          info
+          project_uri
+          gem_uri
+          homepage_uri
+          wiki_uri
+          documentation_uri
+          mailing_list_uri
+          source_code_uri
+          bug_tracker_uri -->
+
+    <!-- dependencies":{"development":[{"name":"rake","requirements":">= 0"},{"name":"rdoc","requirements":">= 0"}],"runtime":[{"name":"activesupport","requirements":"~> 3.0"},{"name":"aws-sdk","requirements":">= 0"},{"name":"eventmachine","requirements":"~> 0.12"}]}} -->
+
+    <script type="text/javascript">
+      function loadNewestGemList(callback_function) {
+        var gem_list = $.jStorage.get('gem_list');
+        if (isBlank(gem_list)) {
+          console.log('downloading new gem list');
+          apiGet(apiPath('activity/latest.json'), {}, function(gem_list) {
+            $.jStorage.set('gem_list', gem_list);
+            $.jStorage.setTTL('gem_list', 3600000);
+            callback_function(gem_list);
+          });
+        } else {
+          console.log('using cached gem list');
+          callback_function(gem_list);
+        }
+      }
+
+      function purgeCachedGemList() {
+        $.jStorage.deleteKey('gem_list');
+      }
+
+      function loadNewestGemData(gem_name, callback_function) {
+        var gem_key = 'gem_detail_'+gem_name;
+        var gem_data = $.jStorage.get(gem_key);
+        if (isBlank(gem_data)) {
+          console.log('downloading new gem data ' + gem_key);
+          apiGet(apiPath('gems/'+gem_name+'.json'), {}, function(gem_data) {
+            $.jStorage.set(gem_key, gem_data);
+            $.jStorage.setTTL(gem_key, 3600000);
+            callback_function(gem_data);
+          });
+        } else {
+          console.log('using cached gem data ' + gem_key);
+          callback_function(gem_data);
+        }
+      }
+
+      function loadGemDetail(gem_name) {
+        loadNewestGemData(gem_name, function(gem) {
+          $('#gem-detail-page div[data-role=header] h1').text(gem["name"]);
+        });
+      }
+
+      function loadHomePage() {
+        $("#gem-list").empty();
+        loadNewestGemList(function(gems) {
+          $.each(gems, function(index, gem) {
+            $("#gem-list").append($('#gemListEntryTemplate').render( gem ));
+          });
+          $("#gem-list").listview('refresh');
+          $('.gem-list-item').bind('taphold',function(event, ui){
+            alert('long press');
+          });
+        });
+      }
+
+      function onPageReady() {
+        $(document).bind( "pagebeforechange", function() {
+          hideAndroidMenu();
+        });
+
+        $('#gem-detail-page').live('pagebeforeshow',function(event){
+          loadGemDetail($('#gem-detail-page').jqmData('gem-name'));
+        });
+
+        $('#main-page').live('pagebeforeshow',function(event){
+          loadHomePage();
+        });
+
+        $('#main-page').live('pagebeforehide',function(event){
+          $('#gem-list').empty();
+        });
+      }
+    </script>
+  </head>
+  <body onload="assimilate()">
+    <div data-role="page" id="main-page" data-android-menu="main-android-menu">
+      <div data-role="header" data-position="fixed" data-theme="a">
+        <h1>Newest Gems</h1>
+        <a href="javascript:purgeCachedGemList(); loadHomePage();" data-icon="refresh" data-iconpos="notext">refresh</a>
+      </div>
+      <div date-role="content" data-theme="b">
+        <div class="content-primary">
+          <ul data-role="listview" data-inset="true" id="gem-list">
+            <li>Loading...</li>
+          </ul>
+        </div>
+      </div>
+      <div class="overlay" id="main-android-menu" style="display:none;">
+        <div class="box" data-role="navbar" data-iconpos="top">
+          <ul>
+            <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
+            <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
+            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div data-role="page" id="gem-detail-page" data-previous-page="#main-page" data-android-menu="detail-android-menu">
+      <div data-role="header" data-position="fixed" data-theme="a">
+        <a href="#main-page" data-icon="back" data-direction="reverse">Back</a>
+        <h1>Gem Detail</h1>
+      </div>
+      <div date-role="content" data-theme="b">
+        Loading...
+      </div>
+      <div class="overlay" id="detail-android-menu" style="display:none;">
+        <div class="box" data-role="navbar" data-iconpos="top">
+          <ul>
+            <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
+            <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
+            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div data-role="page" id="default-search-page" data-previous-page="#main-page" data-android-menu="search-android-menu">
+      <div data-role="header" data-position="fixed" data-theme="a">
+        <h1>search</h1>
+      </div>
+      <div date-role="content" data-theme="b">
+        Search Form Here.
+      </div>
+      <div class="overlay" id="search-android-menu" style="display:none;">
+        <div class="box" data-role="navbar" data-iconpos="top">
+          <ul>
+            <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
+            <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
+            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div data-role="page" id="more-page" data-previous-page="#main-page" data-android-menu="more-android-menu">
+      <div data-role="header" data-position="fixed" data-theme="a">
+        <h1>More</h1>
+      </div>
+      <div date-role="content" data-theme="b">
+        Config Stuff Here.
+      </div>
+      <div class="overlay" id="more-android-menu" style="display:none;">
+        <div class="box" data-role="navbar" data-iconpos="top">
+          <ul>
+            <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
+            <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
+            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>
