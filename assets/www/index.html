@@ -26,19 +26,21 @@
         z-index:100;
       }
 
-    .box {
-      position:fixed;
-      top:-200px;
-      width:320px;
-      background-color:#fff;
-      color:#7F7F7F;
-      padding:0px;
-      border:2px solid #ccc;
-      z-index:101;
-      top:445px;
-    }
+      .box {
+        position:fixed;
+        top:-200px;
+        width:320px;
+        background-color:#fff;
+        color:#7F7F7F;
+        padding:0px;
+        border:2px solid #ccc;
+        z-index:101;
+        top:445px;
+      }
 
-  </style>
+      div.gem-text { padding:5px; }
+      div.gem-info { padding:5px; margin-top:5px; border-top: 1px solid lightgrey; }
+    </style>
 
     <script id="gemListEntryTemplate" type="text/x-jquery-tmpl">
       <li>
@@ -48,28 +50,31 @@
       </li>
     </script>
 
-    <script id="gemDetailTemplate" type="text/x-jquery-tmpl">
-      <div>
-        <dl>
-          <dt>Name:</dt>
-          <dd>{{=name}}</dd>
-      </div>
+    <script id="gemDetailLoadingTemplate" type="text/x-jquery-tmpl">
+      Loading...
     </script>
 
-<!-- downloads
-          version
-          version_downloads
-          authors
-          info
-          project_uri
-          gem_uri
-          homepage_uri
-          wiki_uri
-          documentation_uri
-          mailing_list_uri
-          source_code_uri
-          bug_tracker_uri -->
+    <script id="gemDetailTemplate" type="text/x-jquery-tmpl">
+      <div class="gem-text">
+        <h2>{{=name}}</h2>
+        <div class="ui-grid-a">
+          <div class="ui-block-a">{{=version}}</div>
+          <div class="ui-block-b">{{=authors}}</div>
+        </div>
 
+        <div class="gem-info">{{=info}}</div>
+      </div>
+
+      {{#each links}}
+        <div><a id="{{=id}}" href="{{=url}}" data-role="button" data-rel="external">{{=name}}</a></div>
+      {{/each}}
+
+      <!-- <div class="ui-grid-a">
+        <div class="ui-block-a">Downloads Total: {{=downloads}}</div>
+        <div class="ui-block-b">Current version: {{=version_downloads}}</div>
+      </div> -->
+
+    </script>
     <!-- dependencies":{"development":[{"name":"rake","requirements":">= 0"},{"name":"rdoc","requirements":">= 0"}],"runtime":[{"name":"activesupport","requirements":"~> 3.0"},{"name":"aws-sdk","requirements":">= 0"},{"name":"eventmachine","requirements":"~> 0.12"}]}} -->
 
     <script type="text/javascript">
@@ -110,7 +115,33 @@
 
       function loadGemDetail(gem_name) {
         loadNewestGemData(gem_name, function(gem) {
-          $('#gem-detail-page div[data-role=header] h1').text(gem["name"]);
+          var links = [];
+          var ui_block = "a";
+          $.each({
+            homepage_uri: "Homepage",
+            project_uri: "Project Page",
+            wiki_uri: "Wiki",
+            documentation_uri: "Documentation",
+            mailing_list_uri: "Mailing List",
+            bug_tracker_uri: "Bugs",
+            source_code_uri: "Source Code",
+            gem_uri: "Download Gem"
+          }, function(k,v) {
+            if (!isBlank(gem[k])) {
+              links.push({name:v, url:gem[k], block:ui_block, id:k});
+              if (ui_block == "a") {
+                ui_block = "b";
+              } else if (ui_block == "b") {
+                ui_block = "c";
+              } else if (ui_block == "c") {
+                ui_block = "a";
+              }
+            }
+          });
+          gem.links = links;
+          $('#gem-detail-page div[data-role=header] h1').text("");
+          $('#gem-detail-page div[class=content-primary]').html($('#gemDetailTemplate').render(gem));
+          $('#gem-detail-page a[data-role=button]').button();
         });
       }
 
@@ -127,15 +158,30 @@
         });
       }
 
+      function placeGemDetailLoadingScreen() {
+        $('#gem-detail-page div[data-role=header] h1').text("Loading");
+        $('#gem-detail-page div[class=content-primary]').html($('#gemDetailLoadingTemplate').render());
+      }
+
+      function getCurrentGemName() {
+        if ($('#gem-detail-page').jqmData('gem-name') != undefined) {
+          return $('#gem-detail-page').jqmData('gem-name');
+        } else if (getParameterByName('gem_name').length>0) {
+          return getParameterByName('gem_name');
+        } else { return undefined; }
+      }
+
       function onPageReady() {
         $(document).bind( "pagebeforechange", function() {
           hideAndroidMenu();
         });
 
         $('#gem-detail-page').live('pagebeforeshow',function(event){
-          loadGemDetail($('#gem-detail-page').jqmData('gem-name'));
+          placeGemDetailLoadingScreen();
+          loadGemDetail(getCurrentGemName());
         });
 
+        loadHomePage();
         $('#main-page').live('pagebeforeshow',function(event){
           loadHomePage();
         });
@@ -173,10 +219,13 @@
     <div data-role="page" id="gem-detail-page" data-previous-page="#main-page" data-android-menu="detail-android-menu">
       <div data-role="header" data-position="fixed" data-theme="a">
         <a href="#main-page" data-icon="back" data-direction="reverse">Back</a>
-        <h1>Gem Detail</h1>
+        <h1>Loading</h1>
+        <a href="javascript:loadGemDetail(getCurrentGemName());" data-icon="refresh" data-iconpos="notext">refresh</a>
       </div>
       <div date-role="content" data-theme="b">
-        Loading...
+        <div class="content-primary">
+          Loading...
+        </div>
       </div>
       <div class="overlay" id="detail-android-menu" style="display:none;">
         <div class="box" data-role="navbar" data-iconpos="top">
