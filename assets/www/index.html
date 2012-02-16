@@ -16,6 +16,12 @@
 
     <link rel="stylesheet" type="text/css" href="jquery/jquery.mobile-1.0.1.min.css" />
     <style>
+      #search-query{
+        background-color:white;
+        color:black;
+        margin-left:55px;
+        width:220px;
+      }
       .overlay{
         background:transparent url(images/overlay.png) repeat top left;
         position:fixed;
@@ -186,6 +192,10 @@
           loadHomePage();
         });
 
+        $('#default-search-page').live('pageshow',function(event){
+          $('#search-query').focus();
+        });
+
         $('#main-page').live('pagebeforehide',function(event){
           $('#gem-list').empty();
         });
@@ -238,12 +248,14 @@
       </div>
     </div>
 
-    <div data-role="page" id="default-search-page" data-previous-page="#main-page" data-android-menu="search-android-menu">
+    <div data-role="page" id="default-search-page" data-android-menu="search-android-menu">
       <div data-role="header" data-position="fixed" data-theme="a">
-        <h1>search</h1>
+        <a href="javascript:handleBackButton();" data-icon="back" data-iconpos="notext">Back</a>
+        <form><input type="text" id="search-query" name="search-query"></form>
+        <a href="javascript:submitSearchForm();" data-icon="search" data-iconpos="notext">Search</a>
       </div>
       <div date-role="content" data-theme="b">
-        Search Form Here.
+        <em>Enter search in box above.</em>
       </div>
       <div class="overlay" id="search-android-menu" style="display:none;">
         <div class="box" data-role="navbar" data-iconpos="top">
