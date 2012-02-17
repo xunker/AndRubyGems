@@ -124,7 +124,8 @@
 
       function submitSearchForm() {
         // search.(json|xml|yaml)?query=[YOUR QUERY]
-        var search_query = $('#search-query').val();
+        var search_query = $.trim($('#search-query').val());
+        if (search_query.length < 1) { return false; }
         $.jStorage.set('last_search_term', search_query);
         $("#search-list").empty();
         $("#search-list").append('<li><em>Searching for "'+search_query+'"');
@@ -133,6 +134,7 @@
           $.jStorage.setTTL('last_search', 360000);
           updateSearchResults();
         });
+        return false;
       }
 
       function updateSearchResults() {
@@ -189,6 +191,12 @@
 
       function onPageReady() {
         $('#search-form').submit(function() { submitSearchForm(); });
+        $('#search-query').keypress(function(e){
+          if(e.which == 13){
+            e.preventDefault();
+            submitSearchForm();
+          }
+        });
 
         $(document).bind( "pagebeforechange", function() {
           hideAndroidMenu();
