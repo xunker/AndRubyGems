@@ -19,8 +19,8 @@
       #search-query{
         background-color:white;
         color:black;
-        margin-left:55px;
-        width:220px;
+        margin-left:40px;
+        width:225px;
       }
       .overlay{
         background:transparent url(images/overlay.png) repeat top left;
@@ -34,14 +34,14 @@
 
       .box {
         position:fixed;
-        top:-200px;
+        /*top:-200px;*/
         width:320px;
         background-color:#fff;
         color:#7F7F7F;
         padding:0px;
-        border:2px solid #ccc;
+        /*border:2px solid #ccc;*/
         z-index:101;
-        top:445px;
+        top:451px;
       }
 
       div.gem-text { padding:5px; }
@@ -151,6 +151,39 @@
         });
       }
 
+      function submitSearchForm() {
+        // search.(json|xml|yaml)?query=[YOUR QUERY]
+        var search_query = $('#search-query').val();
+        $.jStorage.set('last_search_term', search_query);
+        $("#search-list").empty();
+        $("#search-list").append('<li><em>Searching for "'+search_query+'"');
+        apiGet(apiPath('search.json'), {query:search_query}, function(gems) {
+          $.jStorage.set('last_search', gems);
+          $.jStorage.setTTL('last_search', 360000);
+          updateSearchResults();
+        });
+      }
+
+      function updateSearchResults() {
+        var gems = $.jStorage.get('last_search');
+        var last_search_term = $.jStorage.get('last_search_term');
+        if ((gems != undefined) && (last_search_term != undefined)){
+          $("#search-list").empty();
+          $('#search-query').val(last_search_term);
+          if (gems.length == 0) {
+            $("#search-list").append('<li><em>no results</em></li>');
+          } else {
+            $.each(gems, function(index, gem) {
+              $("#search-list").append($('#gemListEntryTemplate').render( gem ));
+            });
+            $("#search-list").listview('refresh');
+            // $('.gem-list-item').bind('taphold',function(event, ui){
+            //   alert('long press');
+            // });
+          }
+        }
+      }
+
       function loadHomePage() {
         $("#gem-list").empty();
         loadNewestGemList(function(gems) {
@@ -158,15 +191,21 @@
             $("#gem-list").append($('#gemListEntryTemplate').render( gem ));
           });
           $("#gem-list").listview('refresh');
-          $('.gem-list-item').bind('taphold',function(event, ui){
-            alert('long press');
-          });
+          // $('.gem-list-item').bind('taphold',function(event, ui){
+          //   alert('long press');
+          // });
         });
       }
 
       function placeGemDetailLoadingScreen() {
         $('#gem-detail-page div[data-role=header] h1').text("Loading");
         $('#gem-detail-page div[class=content-primary]').html($('#gemDetailLoadingTemplate').render());
+      }
+
+      function placeGemListLoadingScreen() {
+        $('#gem-list').empty();
+        $('#gem-list').append('<li>Loading...</li>');
+
       }
 
       function getCurrentGemName() {
@@ -178,6 +217,8 @@
       }
 
       function onPageReady() {
+        $('#search-form').submit(function() { submitSearchForm(); });
+
         $(document).bind( "pagebeforechange", function() {
           hideAndroidMenu();
         });
@@ -188,8 +229,16 @@
         });
 
         loadHomePage();
-        $('#main-page').live('pagebeforeshow',function(event){
+        $('#main-page').live('pageshow',function(event){
           loadHomePage();
+        });
+
+        $('#default-search-page').live('pageshow',function(event){
+          updateSearchResults();
+        });
+        $('#default-search-page').live('pagebeforehide',function(event){
+          $('#search-list').empty();
+          $('#search-list').append('<li><em>Enter search term in box above.</em></li>');
         });
 
         $('#default-search-page').live('pageshow',function(event){
@@ -197,7 +246,7 @@
         });
 
         $('#main-page').live('pagebeforehide',function(event){
-          $('#gem-list').empty();
+          placeGemListLoadingScreen();
         });
       }
     </script>
@@ -205,8 +254,9 @@
   <body onload="assimilate()">
     <div data-role="page" id="main-page" data-android-menu="main-android-menu">
       <div data-role="header" data-position="fixed" data-theme="a">
-        <h1>Newest Gems</h1>
         <a href="javascript:purgeCachedGemList(); loadHomePage();" data-icon="refresh" data-iconpos="notext">refresh</a>
+        <h1>Newest Gems</h1>
+        <a href="#default-search-page" data-icon="search" data-iconpos="notext">Search</a>
       </div>
       <div date-role="content" data-theme="b">
         <div class="content-primary">
@@ -216,19 +266,18 @@
         </div>
       </div>
       <div class="overlay" id="main-android-menu" style="display:none;">
-        <div class="box" data-role="navbar" data-iconpos="top">
+        <div data-position="fixed" class="box" data-role="navbar" data-iconpos="top">
           <ul>
             <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
             <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
-            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
           </ul>
         </div>
       </div>
     </div>
 
-    <div data-role="page" id="gem-detail-page" data-previous-page="#main-page" data-android-menu="detail-android-menu">
+    <div data-role="page" id="gem-detail-page" data-android-menu="detail-android-menu">
       <div data-role="header" data-position="fixed" data-theme="a">
-        <a href="#main-page" data-icon="back" data-direction="reverse">Back</a>
+        <a href="javascript:handleBackButton();" data-icon="back" data-direction="reverse">Back</a>
         <h1>Loading</h1>
         <a href="javascript:loadGemDetail(getCurrentGemName());" data-icon="refresh" data-iconpos="notext">refresh</a>
       </div>
@@ -242,7 +291,6 @@
           <ul>
             <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
             <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
-            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
           </ul>
         </div>
       </div>
@@ -251,36 +299,21 @@
     <div data-role="page" id="default-search-page" data-android-menu="search-android-menu">
       <div data-role="header" data-position="fixed" data-theme="a">
         <a href="javascript:handleBackButton();" data-icon="back" data-iconpos="notext">Back</a>
-        <form><input type="text" id="search-query" name="search-query"></form>
+        <form id="search-form"><input type="text" id="search-query" name="search-query"></form>
         <a href="javascript:submitSearchForm();" data-icon="search" data-iconpos="notext">Search</a>
       </div>
       <div date-role="content" data-theme="b">
-        <em>Enter search in box above.</em>
+        <div class="content-primary">
+          <ul data-role="listview" data-inset="true" id="search-list">
+            <li><em>Enter search term in box above.</em></li>
+          </ul>
+        </div>
       </div>
       <div class="overlay" id="search-android-menu" style="display:none;">
         <div class="box" data-role="navbar" data-iconpos="top">
           <ul>
             <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
             <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
-            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
-          </ul>
-        </div>
-      </div>
-    </div>
-
-    <div data-role="page" id="more-page" data-previous-page="#main-page" data-android-menu="more-android-menu">
-      <div data-role="header" data-position="fixed" data-theme="a">
-        <h1>More</h1>
-      </div>
-      <div date-role="content" data-theme="b">
-        Config Stuff Here.
-      </div>
-      <div class="overlay" id="more-android-menu" style="display:none;">
-        <div class="box" data-role="navbar" data-iconpos="top">
-          <ul>
-            <li><a href="#main-page" data-role="button" data-icon="home">Home</a></li>
-            <li><a href="#default-search-page" data-role="button" data-icon="search">Search</a></li>
-            <li><a href="#more-page" data-role="button" data-icon="gear">More</a></li>
           </ul>
         </div>
       </div>

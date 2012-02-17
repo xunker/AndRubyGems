@@ -11,11 +11,13 @@
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/base.js \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/config.js \
+/Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/images \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/index.html \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/jquery \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/jsrender.js \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/jstorage.js \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/phonegap-1.4.0.js \
+/Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/images/overlay.png \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/jquery/images \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/jquery/jquery-1.6.4.js \
 /Users/mnielsen/work/andrubygems/AndRubyGems/assets/www/jquery/jquery.mobile-1.0.1.js \
